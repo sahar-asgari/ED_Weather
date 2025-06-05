@@ -224,7 +224,7 @@ months = {
     9: "September", 10: "October", 11: "November", 12: "December"
 }
 days = list(range(1, 32))  # Days from 1 to 31
-years = list(range(2023, 2025))  # Years from 2011 to 2024
+years = list(range(2023, 2026))  # Years from 2011 to 2024
 
 def create_date_streamlit():
     # initialization 
@@ -445,7 +445,8 @@ def predict_ED_visits(model_dropdown):
 
         st.markdown(html_string, unsafe_allow_html=True)
 
-    if year >= latest_year_availableED and month > latest_month_availableED:
+    else:
+    #year >= latest_year_availableED and month > latest_month_availableED:
         if model_dropdown == 'ED Visits after 3 Days':
             filtered_df = df_lag3[(df_lag3['year'] == year) & 
                               (df_lag3['month'] == month) & 
