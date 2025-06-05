@@ -10,10 +10,6 @@ from streamlit_folium import st_folium, folium_static
 
 import matplotlib.pyplot as plt
 from datetime import datetime
-#import sklearn
-#st.write(f"scikit-learn version: {sklearn.__version__}")
-
-
 #%%
 today = datetime.now()
 today_day = today.day
@@ -228,12 +224,12 @@ months = {
     9: "September", 10: "October", 11: "November", 12: "December"
 }
 days = list(range(1, 32))  # Days from 1 to 31
-years = list(range(2023, 2026))  # Years from 2011 to 2024
+years = list(range(2023, 2025))  # Years from 2011 to 2024
 
 def create_date_streamlit():
     # initialization 
     if 'year_input' not in st.session_state:
-        st.session_state.year_input = 2025
+        st.session_state.year_input = 2024
     if 'month_input' not in st.session_state:
         st.session_state.month_input = 1 
     if 'day_input' not in st.session_state:
@@ -247,7 +243,6 @@ def create_date_streamlit():
 
     selected_month = st.selectbox('Month', options=list(months.keys()), format_func=lambda x: f"{x} - {months[x]}")
     st.session_state.month_input = selected_month
-    
 
     selected_day = st.selectbox('Day', options=days)
     st.session_state.day_input = selected_day
@@ -450,8 +445,7 @@ def predict_ED_visits(model_dropdown):
 
         st.markdown(html_string, unsafe_allow_html=True)
 
-    else:
-    #if year >= latest_year_availableED and month > latest_month_availableED:
+    if year >= latest_year_availableED and month > latest_month_availableED:
         if model_dropdown == 'ED Visits after 3 Days':
             filtered_df = df_lag3[(df_lag3['year'] == year) & 
                               (df_lag3['month'] == month) & 
@@ -506,12 +500,39 @@ def predict_ED_visits(model_dropdown):
 
 def plot_historical_ED_visits(inst_no, model_dropdown):
     st.write("#### ED Visits: Trends & Forecasts")
+
     if model_dropdown == 'ED Visits after 3 Days':
         df_plot = df_predict_3
+        df_plot = df_plot[df_plot['inst_no'] == inst_no][['smooth_ed_visits', 'Predicted_ED_Visits', 'year', 'month', 'day']]
+        df_plot['date'] = pd.to_datetime(df_plot[['year', 'month', 'day']])
+        # Shift Predicted_ED_Visits by 3 rows
+        df_plot['Predicted_ED_Visits'] = df_plot['Predicted_ED_Visits'].shift(3)
+        # Generate 3 additional dates starting after the last date
+        last_date = df_plot['date'].max()
+        new_dates = [last_date + pd.Timedelta(days=i) for i in range(1, 4)]
+        # Create 3 new rows with just the new dates (NaNs for other columns except 'date')
+        new_rows = pd.DataFrame({'date': new_dates})
+        # Append new rows to the original dataframe
+        df_plot = pd.concat([df_plot, new_rows], ignore_index=True)
+        # Sort by date just to be safe
+        df_plot = df_plot.sort_values('date').reset_index(drop=True)
+        #print(df_plot)
+
     else:
         df_plot = df_predict_7
-    df_plot = df_plot[df_plot['inst_no'] == inst_no][['smooth_ed_visits', 'Predicted_ED_Visits', 'year', 'month', 'day']]
-    df_plot['date'] = pd.to_datetime(df_plot[['year', 'month', 'day']])
+        df_plot = df_plot[df_plot['inst_no'] == inst_no][['smooth_ed_visits', 'Predicted_ED_Visits', 'year', 'month', 'day']]
+        df_plot['date'] = pd.to_datetime(df_plot[['year', 'month', 'day']])
+        # Shift Predicted_ED_Visits by 7 rows
+        df_plot['Predicted_ED_Visits'] = df_plot['Predicted_ED_Visits'].shift(7)
+        # Generate 3 additional dates starting after the last date
+        last_date = df_plot['date'].max()
+        new_dates = [last_date + pd.Timedelta(days=i) for i in range(1, 8)]
+        # Create 3 new rows with just the new dates (NaNs for other columns except 'date')
+        new_rows = pd.DataFrame({'date': new_dates})
+        # Append new rows to the original dataframe
+        df_plot = pd.concat([df_plot, new_rows], ignore_index=True)
+        # Sort by date just to be safe
+        df_plot = df_plot.sort_values('date').reset_index(drop=True)
     df_plot.drop(columns=['year', 'month', 'day'], inplace=True)
 
     plt.figure(figsize=(22, 10))
@@ -561,14 +582,39 @@ def table(inst_no):
         df_table.rename(columns={'smooth_ed_visits': 'Actual_ED_Visits'}, inplace=True)
         df_table['inst_no'] = df_table['inst_no'].astype(int).astype(str)
 
+        # Generate 3 additional dates starting after the last date
+        last_date = df_table['date'].max()
+        new_dates = [last_date + pd.Timedelta(days=i) for i in range(1, 4)]
+        # Create 3 new rows with just the new dates (NaNs for other columns except 'date')
+        new_rows = pd.DataFrame({'date': new_dates})
+        # Append new rows to the original dataframe
+        df_table = pd.concat([df_table, new_rows], ignore_index=True)
+        # Shift Predicted_ED_Visits by 3 rows
+        df_table['Predicted_ED_Visits'] = df_table['Predicted_ED_Visits'].shift(3)
+        # Sort by date just to be safe
+        df_table = df_table.sort_values('date').reset_index(drop=True)
+
     else:
         df_table = df_predict_7[df_predict_7['inst_no'] == inst_no]
-        df_table['date'] = pd.to_datetime(df_table[['year', 'month', 'day', 'Season']])
+        df_table['date'] = pd.to_datetime(df_table[['year', 'month', 'day']])
         df_table = df_table.drop(['year', 'month', 'day'], axis=1).reset_index(drop=True)
         df_table = df_table[['date'] + [col for col in df_table.columns if col != 'date']]
         df_table['date'] = pd.to_datetime(df_table['date']).dt.date
         df_table.rename(columns={'smooth_ed_visits': 'Actual_ED_Visits'}, inplace=True)
         df_table['inst_no'] = df_table['inst_no'].astype(int).astype(str)
+
+        # Generate 7 additional dates starting after the last date
+        last_date = df_table['date'].max()
+        new_dates = [last_date + pd.Timedelta(days=i) for i in range(1, 8)]
+        # Create 3 new rows with just the new dates (NaNs for other columns except 'date')
+        new_rows = pd.DataFrame({'date': new_dates})
+        # Append new rows to the original dataframe
+        df_table = pd.concat([df_table, new_rows], ignore_index=True)
+        # Shift Predicted_ED_Visits by 7 rows
+        df_table['Predicted_ED_Visits'] = df_table['Predicted_ED_Visits'].shift(7)
+        # Sort by date just to be safe
+        df_table = df_table.sort_values('date').reset_index(drop=True)
+
     return df_table
 ##################################################################################################################################
 ##################################################################################################################################
