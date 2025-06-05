@@ -10,6 +10,10 @@ from streamlit_folium import st_folium, folium_static
 
 import matplotlib.pyplot as plt
 from datetime import datetime
+import sklearn
+st.write(f"scikit-learn version: {sklearn.__version__}")
+
+
 #%%
 today = datetime.now()
 today_day = today.day
