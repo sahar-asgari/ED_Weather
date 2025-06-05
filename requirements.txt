@@ -3,4 +3,4 @@ streamlit
 matplotlib
 folium
 streamlit-folium
-sklearn
+scikit-learn
