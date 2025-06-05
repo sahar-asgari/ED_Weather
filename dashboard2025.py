@@ -660,7 +660,7 @@ with tab1:
     st.markdown(
         """
         <p class="big-font">
-        <strong>The training data spans from January 2011 to March 2024.</strong><br>
+        <strong>The training data spans from January 2011 to November 2024.</strong><br>
         </p>
         """,
         unsafe_allow_html=True
